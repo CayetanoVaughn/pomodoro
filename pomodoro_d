@@ -1,12 +1,12 @@
 #!/bin/bash
 
 # Variables
-CACHE_DIR="/home/cayetano/.config/hypr/cache"
+CACHE_DIR="$HOME/.config/hypr/cache"
 STATE_FILE="$CACHE_DIR/pomodoro_state"
 MODE_FILE="$CACHE_DIR/pomodoro_mode"
 COUNT_FILE="$CACHE_DIR/pomodoro_count"
 PID_FILE="$CACHE_DIR/pomodoro.pid"
-ASSETS="/home/cayetano/.config/hypr/scripts/assets"
+ASSETS="$HOME/.config/hypr/scripts/assets"
 
 declare MODE
 declare -i TIME
