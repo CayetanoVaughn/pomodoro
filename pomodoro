@@ -13,7 +13,7 @@ get_pid () {
 }
 start_pomodoro () {
     if [[ "$STATE" == "dead" ]]; then
-        bash /home/cayetano/.config/hypr/scripts/pomodoro_d &
+        bash $HOME/.config/hypr/scripts/pomodoro_d &
     else
         kill -USR1 $(get_pid)
     fi
