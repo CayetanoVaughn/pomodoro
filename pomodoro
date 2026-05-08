@@ -30,7 +30,7 @@ stop_pomodoro () {
         echo "Why won't you stop? He's dead already!"
         exit 1
     fi
-    if [[ "$STATE" == "stopped" ]]; then
+    if [ "$STATE" == "stopped" ] || [ "$STATE" == "waiting" ]; then
         kill -TERM $(get_pid)
         exit 0
     fi
