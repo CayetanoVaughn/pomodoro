@@ -14,14 +14,15 @@ declare -i ds
 declare -i COUNT
 declare skip
 declare paused
+declare await
 declare pending_notification=""
 
 declare -ir WORK_TIME=1500
-declare -ir SHORT_BREAK=300
+declare -ir SHORT_BREAK=5
 declare -ir LONG_BREAK=900
 declare -ir NUM_BREAKS=5
 
-trap toggle_pause SIGUSR1
+trap handle_start SIGUSR1
 trap handle_skip SIGUSR2
 trap stop_timer SIGHUP
 trap cleanup SIGTERM
@@ -47,6 +48,13 @@ toggle_pause () {
         echo "paused" > "$STATE_FILE"
         pkill -RTMIN+2 waybar
         handle_notification pause
+    fi
+}
+handle_start () {
+    if $await; then
+        await=false
+    else
+        toggle_pause
     fi
 }
 handle_skip () {
@@ -183,6 +191,12 @@ while true; do
     initialize_timer
     handle_notification start
     timer
-    if (( TIME == 0 )); then handle_notification end; fi
+    if (( TIME == 0 )); then
+        handle_notification end
+        await=true
+        while $await; do
+            sleep 0.1
+        done
+    fi
     change_mode
 done
