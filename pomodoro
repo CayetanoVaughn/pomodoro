@@ -1,0 +1,54 @@
+#!/bin/bash
+CACHE_DIR=/home/cayetano/.config/hypr/cache
+COUNT_FILE="$CACHE_DIR/pomodoro_count"
+STATE_FILE="$CACHE_DIR/pomodoro_state"
+PID_FILE="$CACHE_DIR/pomodoro.pid"
+
+declare STATE
+init () {
+    [[ -f "$STATE_FILE" ]] && STATE=$(cat "$STATE_FILE")
+}
+get_pid () {
+    [[ -f "$PID_FILE" ]] && cat "$PID_FILE"
+}
+start_pomodoro () {
+    if [[ "$STATE" == "dead" ]]; then
+        bash /home/cayetano/.config/hypr/scripts/pomodoro_d &
+    else
+        kill -USR1 $(get_pid)
+    fi
+}
+skip_pomodoro () {
+    if [[ "$STATE" == "stopped" ]]; then
+        echo "Cannot skip, timer is stopped"
+        exit 1
+    fi
+    kill -USR2 $(get_pid)
+}
+stop_pomodoro () {
+    if [[ "$STATE" == "dead" ]]; then
+        echo "Why won't you stop? He's dead already!"
+        exit 1
+    fi
+    if [[ "$STATE" == "stopped" ]]; then
+        kill -TERM $(get_pid)
+        exit 0
+    fi
+    kill -SIGHUP $(get_pid)
+}
+
+init
+case $1 in
+    start)
+        start_pomodoro
+        ;;
+    skip)
+        skip_pomodoro
+        ;;
+    stop)
+        stop_pomodoro
+        ;;
+    *)
+        echo "Usage: $0 {start|resume|stop}"
+        ;;
+esac

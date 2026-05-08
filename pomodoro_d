@@ -1,0 +1,188 @@
+#!/bin/bash
+
+# Variables
+CACHE_DIR="/home/cayetano/.config/hypr/cache"
+STATE_FILE="$CACHE_DIR/pomodoro_state"
+MODE_FILE="$CACHE_DIR/pomodoro_mode"
+COUNT_FILE="$CACHE_DIR/pomodoro_count"
+PID_FILE="$CACHE_DIR/pomodoro.pid"
+ASSETS="/home/cayetano/.config/hypr/scripts/assets"
+
+declare MODE
+declare -i TIME
+declare -i ds
+declare -i COUNT
+declare skip
+declare paused
+declare pending_notification=""
+
+declare -ir WORK_TIME=1500
+declare -ir SHORT_BREAK=300
+declare -ir LONG_BREAK=900
+declare -ir NUM_BREAKS=5
+
+trap toggle_pause SIGUSR1
+trap handle_skip SIGUSR2
+trap stop_timer SIGHUP
+trap cleanup SIGTERM
+
+# Functions
+init () {
+    MODE="work"
+    paused=false
+    skip=false
+    TIME=$WORK_TIME
+    COUNT=1
+    
+    echo $$ > "$PID_FILE"
+    echo "running" > "$STATE_FILE"
+}
+toggle_pause () {
+    if $paused; then
+        paused=false
+        echo "running" > "$STATE_FILE"
+        handle_notification resume
+    else
+        paused=true
+        echo "paused" > "$STATE_FILE"
+        pkill -RTMIN+2 waybar
+        handle_notification pause
+    fi
+}
+handle_skip () {
+    skip=true
+    paused=false
+    echo "running" > "$STATE_FILE"
+}
+handle_notification () {
+    case $1 in
+        start)
+            notify-send "Pomodoro" "${MODE^} timer started"
+            ffplay -autoexit -nodisp "$ASSETS/start_$MODE.mp3" >/dev/null 2>&1 &
+            ;;
+        pause)
+            notify-send "Pomodoro" "${MODE^} timer paused"
+            ffplay -autoexit -nodisp "$ASSETS/pause.mp3" >/dev/null 2>&1 &
+            ;;
+        resume)
+            notify-send "Pomodoro" "${MODE^} timer resumed"
+            ffplay -autoexit -nodisp "$ASSETS/resume.mp3" >/dev/null 2>&1 &
+            ;;
+        end)
+            notify-send "Pomodoro" "${MODE^} timer ended"
+            ffplay -autoexit -nodisp "$ASSETS/end.mp3" >/dev/null 2>&1 &
+            ;;
+        stop)
+            notify-send "Pomodoro" "${MODE^} timer stopped"
+            ;;
+        exit)
+            notify-send "Pomodoro" "Pomodoro has been reset and closed"
+            ;;
+        *)
+            echo "Unknown request"
+            ;;
+    esac
+}
+cleanup () {
+    echo "dead" > "$STATE_FILE"
+    echo "1" > "$COUNT_FILE"
+    pkill -RTMIN+2 waybar
+    handle_notification exit
+    echo "25:00" > "$CACHE_DIR/pomodoro_timer"
+    echo "work" > "$MODE_FILE"
+    exit 0
+}
+stop_timer () {
+    echo "stopped" > "$STATE_FILE"
+    pending_notification="stop"
+    paused=true
+    skip=false
+#    if [[ "$MODE" == "work" ]]; then
+#        TIME=$WORK_TIME
+#    else
+#        if (( COUNT % NUM_BREAKS > 0 )); then
+#            TIME=$SHORT_BREAK
+#        else
+#            TIME=$LONG_BREAK
+#        fi
+#    fi
+}
+state_catch () {
+    if [[ -n "$pending_notification" ]]; then
+        pkill -RTMIN+2 waybar
+        handle_notification "$pending_notification"
+        if [[ "$pending_notification" == "stop" ]]; then
+#            if [[ "$MODE" == "work" ]]; then
+#                TIME=$WORK_TIME
+#            else
+#                if (( COUNT % NUM_BREAKS > 0 )); then
+#                    TIME=$SHORT_BREAK
+#                else
+#                    TIME=$LONG_BREAK
+#                fi
+#            fi
+            initialize_timer
+        fi
+        pending_notification=""
+            
+    fi
+}
+initialize_timer () {
+    if [[ "$MODE" == "work" ]]; then
+        TIME=$WORK_TIME
+    else
+        if (( COUNT % NUM_BREAKS > 0 )); then
+            TIME=$SHORT_BREAK
+        else
+            TIME=$LONG_BREAK
+        fi
+    fi
+    ds=TIME*10
+#    handle_notification start
+}
+timer () {
+    local -i MIN SEC
+    ds=$((TIME*10))
+    while (( ds > 0 )); do
+        if $paused; then
+            state_catch
+            sleep 0.1
+            continue
+        fi
+        if $skip; then
+            skip=false
+            break
+        fi
+        
+        MIN=$((ds / 600))
+        SEC=$(((ds % 600) / 10))
+        printf "%02d:%02d\n" "$MIN" "$SEC" > "$CACHE_DIR/pomodoro_timer"
+        pkill -RTMIN+2 waybar
+        sleep 0.1
+        ((ds--))
+    done
+#    if (( TIME == 0 )); then
+#        handle_notification end
+#    fi
+}
+change_mode () {
+    if [[ "$MODE" == "work" ]]; then
+        MODE="break"
+    else
+        MODE="work"
+        ((COUNT++))
+        echo $COUNT > $COUNT_FILE
+    fi
+
+    echo "$MODE" > "$MODE_FILE"
+    pkill -RTMIN+2 waybar
+}
+# Main
+init
+while true; do
+    initialize_timer
+    handle_notification start
+    timer
+    if (( TIME == 0 )); then handle_notification end; fi
+    change_mode
+done
