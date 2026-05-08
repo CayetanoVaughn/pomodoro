@@ -1,5 +1,5 @@
 #!/bin/bash
-CACHE_DIR=/home/cayetano/.config/hypr/cache
+CACHE_DIR="$HOME/.config/hypr/cache"
 COUNT_FILE="$CACHE_DIR/pomodoro_count"
 STATE_FILE="$CACHE_DIR/pomodoro_state"
 PID_FILE="$CACHE_DIR/pomodoro.pid"
