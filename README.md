@@ -7,7 +7,7 @@ Pomodoro shell script
 
 ## Explanation
 ### pomodoro_d
-This script is the actual pomodoro timer, when called it manages its states via cache files, and the timer itself. It runs the in background and is interacted with by the handler script with signals.
+This script is the actual pomodoro timer. When called it manages its states via cache files, and the timer itself. It runs in the background and is interacted with by the handler script with signals.
 The `pkill -RTMIN+2 waybar` is a way for the script to communicate with the waybar module to display the timer in the module. If not being used, this can be commented out.
 ### pomodoro
 This script is the handler script. It parses user command along with the cache files to determine which signals to send to `pomodoro_d`. It is used by calling it along with an argument (Ex. `path/to/pomodoro start`).

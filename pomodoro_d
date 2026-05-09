@@ -21,6 +21,7 @@ declare -ir WORK_TIME=1500
 declare -ir SHORT_BREAK=300
 declare -ir LONG_BREAK=900
 declare -ir NUM_BREAKS=5
+declare -ir REMIND_TIME=60
 
 trap handle_start SIGUSR1
 trap handle_skip SIGUSR2
@@ -32,6 +33,7 @@ init () {
     MODE="work"
     paused=false
     skip=false
+    await=false
     TIME=$WORK_TIME
     COUNT=1
     
@@ -75,9 +77,19 @@ handle_end () {
     echo "waiting" > "$STATE_FILE"
     # Wait for user to start next timer
     await=true
+    ds=$(($REMIND_TIME*10))
     while $await; do
+        handle_await
         sleep 0.1
     done
+}
+handle_await () {
+    if (( ds == 0 )); then
+        ffplay -autoexit -nodisp "$ASSETS/end.mp3" >/dev/null 2>&1 &
+        ds=$((REMIND_TIME*10))
+    else
+        ((ds--))
+    fi
 }
 handle_notification () {
     case $1 in
@@ -94,7 +106,7 @@ handle_notification () {
             ffplay -autoexit -nodisp "$ASSETS/resume.mp3" >/dev/null 2>&1 &
             ;;
         end)
-            notify-send "Pomodoro" "${MODE^} timer ended"
+            notify-send -u "critical" "Pomodoro" "${MODE^} timer ended"
             ffplay -autoexit -nodisp "$ASSETS/end.mp3" >/dev/null 2>&1 &
             ;;
         stop)
