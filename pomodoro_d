@@ -18,7 +18,7 @@ declare await
 declare pending_notification=""
 
 declare -ir WORK_TIME=1500
-declare -ir SHORT_BREAK=5
+declare -ir SHORT_BREAK=300
 declare -ir LONG_BREAK=900
 declare -ir NUM_BREAKS=5
 

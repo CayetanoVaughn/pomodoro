@@ -13,7 +13,7 @@ get_pid () {
 }
 start_pomodoro () {
     if [[ "$STATE" == "dead" ]]; then
-        bash $HOME/Code/pomodoro/pomodoro_d &
+        bash $HOME/.config/hypr/scripts/pomodoro_d &
     else
         kill -USR1 $(get_pid)
     fi
@@ -27,7 +27,7 @@ skip_pomodoro () {
 }
 stop_pomodoro () {
     if [[ "$STATE" == "dead" ]]; then
-        echo "Why won't you stop? He's dead already!"
+        echo "Why won't you stop? He's dead already"
         exit 1
     fi
     if [ "$STATE" == "stopped" ] || [ "$STATE" == "waiting" ]; then
