@@ -4,7 +4,7 @@ COUNT_FILE="$CACHE_DIR/pomodoro_count"
 STATE_FILE="$CACHE_DIR/pomodoro_state"
 PID_FILE="$CACHE_DIR/pomodoro.pid"
 
-declare STATE
+declare STATE="dead"
 init () {
     [[ -f "$STATE_FILE" ]] && STATE=$(cat "$STATE_FILE")
 }
